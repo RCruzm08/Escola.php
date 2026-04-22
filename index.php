@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 const NOTA_RECUPERACAO = 6.0;
 const MEDIA_APROVACAO  = 7.0;
 
@@ -23,22 +25,23 @@ function precisaAtencao(array $notas): bool {
     return min($notas) < NOTA_RECUPERACAO;
 }
 
-$boletim = [
-    ["Ana Silva",          8.5, 7.0,  9.0],
-    ["Klebinho War",       5.0, 6.5,  4.5],
-    ["Juninho DJ",         9.0, 9.5, 10.0],
-    ["Julia Almeida",      4.0, 5.0,  5.5],
-    ["Nathanael da Silva", 7.5, 8.0,  8.5],
-];
-
-$totalAlunos = count($boletim);
-
-if ($totalAlunos === 0) {
-    echo "<p>Nenhum aluno cadastrado.</p>";
-    exit;
+if (!isset($_SESSION['boletim'])) {
+    $_SESSION['boletim'] = [];
 }
 
-$numBimestres = count($boletim[0]) - 1;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nome  = $_POST['nome'];
+    $nota1 = (float) $_POST['nota1'];
+    $nota2 = (float) $_POST['nota2'];
+    $nota3 = (float) $_POST['nota3'];
+
+    $_SESSION['boletim'][] = [$nome, $nota1, $nota2, $nota3];
+}
+
+$boletim = $_SESSION['boletim'];
+$totalAlunos = count($boletim);
+
+$numBimestres = $totalAlunos > 0 ? count($boletim[0]) - 1 : 3;
 
 $alunos = [];
 $somaTurma = 0;
@@ -62,13 +65,13 @@ foreach ($boletim as $item) {
     $somaTurma += $media;
 }
 
-usort($alunos, fn($a, $b) => $b['media'] <=> $a['media']);
-
-$mediaGeral = $somaTurma / $totalAlunos;
-
-$melhor = $alunos[0];
-$pior   = end($alunos);
-reset($alunos);
+if ($totalAlunos > 0) {
+    usort($alunos, fn($a, $b) => $b['media'] <=> $a['media']);
+    $mediaGeral = $somaTurma / $totalAlunos;
+    $melhor = $alunos[0];
+    $pior   = end($alunos);
+    reset($alunos);
+}
 ?>
 
 <!DOCTYPE html>
@@ -81,7 +84,23 @@ reset($alunos);
 <body>
 
 <div class="container mt-5">
-    <h3 class="text-primary">Boletim da Turma (Ranking)</h3>
+    <h3 class="text-primary">Cadastro de Aluno</h3>
+
+    <form method="POST" class="mb-4">
+        <input type="text" name="nome" class="form-control mb-2" placeholder="Nome do aluno" required>
+
+        <input type="number" step="0.1" min="0" max="10" name="nota1" class="form-control mb-2" placeholder="1º Bimestre" required>
+        <input type="number" step="0.1" min="0" max="10" name="nota2" class="form-control mb-2" placeholder="2º Bimestre" required>
+        <input type="number" step="0.1" min="0" max="10" name="nota3" class="form-control mb-2" placeholder="3º Bimestre" required>
+
+        <button type="submit" class="btn btn-primary">Adicionar</button>
+    </form>
+</div>
+
+<?php if ($totalAlunos > 0): ?>
+
+<div class="container">
+    <h3 class="text-primary">Boletim da Turma</h3>
 
     <table class="table table-bordered table-hover mt-3">
         <thead class="table-dark">
@@ -139,34 +158,7 @@ reset($alunos);
     </div>
 </div>
 
-<div class="container mt-5">
-    <h3 class="text-danger">Alunos em Atenção</h3>
-
-    <table class="table table-bordered mt-3">
-        <thead class="table-danger">
-            <tr>
-                <th>Aluno</th>
-                <?php for ($i = 1; $i <= $numBimestres; $i++): ?>
-                    <th><?= $i ?>º Bim</th>
-                <?php endfor; ?>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($alunos as $aluno): ?>
-                <?php if ($aluno['atencao']): ?>
-                    <tr>
-                        <td><?= e($aluno['nome']) ?></td>
-                        <?php foreach ($aluno['notas'] as $nota): ?>
-                            <td class="<?= $nota < NOTA_RECUPERACAO ? 'text-danger fw-bold' : '' ?>">
-                                <?= number_format($nota, 1, ',', '.') ?>
-                            </td>
-                        <?php endforeach; ?>
-                    </tr>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
+<?php endif; ?>
 
 </body>
 </html>
