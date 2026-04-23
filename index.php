@@ -14,7 +14,7 @@ function calcularMedia(array $notas): float {
 }
 
 function getStatus(float $media): array {
-    if ($media >= MEDIA_APROVACAO)  return ["Aprovado", "success"];
+    if ($media >= MEDIA_APROVACAO)  return ["Aprovado",    "success"];
     if ($media >= NOTA_RECUPERACAO) return ["Recuperação", "warning"];
     return ["Reprovado", "danger"];
 }
@@ -57,8 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['limpar'])) {
     exit;
 }
 
-$boletim  = $_SESSION['boletim'];
-$editando = null;
+$boletim   = $_SESSION['boletim'];
+$editando  = null;
 $editIndex = '';
 
 if (isset($_GET['editar'])) {
@@ -134,13 +134,13 @@ if ($totalAlunos > 0) {
                         <input type="text" name="nome" class="form-control" placeholder="Nome do aluno" required maxlength="100" value="<?= e($editando[0] ?? '') ?>">
                     </div>
                     <div class="col-md-2">
-                        <input type="number" step="0.1" min="0" max="10" name="nota1" class="form-control" required value="<?= $editando[1] ?? '' ?>">
+                        <input type="number" step="0.1" min="0" max="10" name="nota1" class="form-control" placeholder="1ª Nota" required value="<?= $editando[1] ?? '' ?>">
                     </div>
                     <div class="col-md-2">
-                        <input type="number" step="0.1" min="0" max="10" name="nota2" class="form-control" required value="<?= $editando[2] ?? '' ?>">
+                        <input type="number" step="0.1" min="0" max="10" name="nota2" class="form-control" placeholder="2ª Nota" required value="<?= $editando[2] ?? '' ?>">
                     </div>
                     <div class="col-md-2">
-                        <input type="number" step="0.1" min="0" max="10" name="nota3" class="form-control" required value="<?= $editando[3] ?? '' ?>">
+                        <input type="number" step="0.1" min="0" max="10" name="nota3" class="form-control" placeholder="3ª Nota" required value="<?= $editando[3] ?? '' ?>">
                     </div>
                     <div class="col-md-2 d-flex gap-2">
                         <button type="submit" class="btn btn-primary w-100">Salvar</button>
@@ -150,6 +150,105 @@ if ($totalAlunos > 0) {
             </form>
         </div>
     </div>
+
+    <?php if ($totalAlunos > 0): ?>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card border-success h-100">
+                <div class="card-header bg-success text-white fw-semibold">Melhor Aluno</div>
+                <div class="card-body">
+                    <h5 class="card-title fw-bold"><?= e($melhorAluno['nome']) ?></h5>
+                    <p class="card-text mb-1">
+                        Média: <span class="badge bg-success fs-6"><?= number_format($melhorAluno['media'], 1, ',', '.') ?></span>
+                    </p>
+                    <span class="badge bg-success"><?= $melhorAluno['status'] ?></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-danger h-100">
+                <div class="card-header bg-danger text-white fw-semibold">Pior Aluno</div>
+                <div class="card-body">
+                    <h5 class="card-title fw-bold"><?= e($piorAluno['nome']) ?></h5>
+                    <p class="card-text mb-1">
+                        Média: <span class="badge bg-danger fs-6"><?= number_format($piorAluno['media'], 1, ',', '.') ?></span>
+                    </p>
+                    <span class="badge bg-<?= $piorAluno['cor'] ?>"><?= $piorAluno['status'] ?></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-warning h-100">
+                <div class="card-header bg-warning fw-semibold">Em Observacao (<?= count($emObservacao) ?>)</div>
+                <div class="card-body">
+                    <?php if (empty($emObservacao)): ?>
+                        <p class="text-muted mb-0">Nenhum aluno em observacao.</p>
+                    <?php else: ?>
+                        <ul class="list-group list-group-flush">
+                            <?php foreach ($emObservacao as $obs): ?>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <?= e($obs['nome']) ?>
+                                <span class="badge bg-warning text-dark"><?= number_format($obs['media'], 1, ',', '.') ?></span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Turma</div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Nome</th>
+                        <th>1a</th>
+                        <th>2a</th>
+                        <th>3a</th>
+                        <th>Media</th>
+                        <th>Status</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($alunos as $pos => $a): ?>
+                    <tr>
+                        <td><?= $pos + 1 ?></td>
+                        <td class="fw-semibold"><?= e($a['nome']) ?></td>
+                        <?php foreach ($a['notas'] as $n): ?>
+                        <td class="<?= $n < NOTA_RECUPERACAO ? 'text-danger fw-bold' : '' ?>">
+                            <?= number_format($n, 1, ',', '.') ?>
+                        </td>
+                        <?php endforeach; ?>
+                        <td class="fw-bold"><?= number_format($a['media'], 1, ',', '.') ?></td>
+                        <td><span class="badge bg-<?= $a['cor'] ?>"><?= $a['status'] ?></span></td>
+                        <td>
+                            <a href="?editar=<?= $a['idx'] ?>"  class="btn btn-sm btn-warning">Editar</a>
+                            <a href="?remover=<?= $a['idx'] ?>" class="btn btn-sm btn-danger">Remover</a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot class="table-secondary">
+                    <tr>
+                        <td colspan="5" class="text-end fw-semibold">Media Geral da Turma:</td>
+                        <td colspan="3" class="fw-bold"><?= number_format($mediaGeral, 1, ',', '.') ?></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <?php endif; ?>
 
 </div>
 
