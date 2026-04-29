@@ -1,9 +1,9 @@
 <?php
 session_start();
 
-const NOTA_RECUPERACAO = 6.0;
+const NOTA_RECUPERACAO = 5.0;
 const MEDIA_APROVACAO  = 7.0;
-const MEDIA_OBSERVACAO = 5.0;
+const MEDIA_OBSERVACAO = 6.0;
 
 function e($valor) {
     return htmlspecialchars($valor, ENT_QUOTES, 'UTF-8');
@@ -15,8 +15,20 @@ function calcularMedia(array $notas): float {
 
 function getStatus(float $media): array {
     if ($media >= MEDIA_APROVACAO)  return ["Aprovado",    "success"];
-    if ($media >= NOTA_RECUPERACAO) return ["Recuperação", "warning"];
+    if ($media >= MEDIA_OBSERVACAO) return ["Observação",  "warning"];
+    if ($media >= NOTA_RECUPERACAO) return ["Recuperação", "secondary"];
     return ["Reprovado", "danger"];
+}
+
+function avaliarDestaque(float $media): string {
+    if ($media >= 9.0) {
+        return " <strong class='text-warning'>(Destaque!)</strong>";
+    }
+    return "";
+}
+
+function verificarRiscoRecuperacao(float $n1, float $n2, float $n3): bool {
+    return $n1 < NOTA_RECUPERACAO || $n2 < NOTA_RECUPERACAO || $n3 < NOTA_RECUPERACAO;
 }
 
 if (!isset($_SESSION['boletim'])) {
@@ -103,7 +115,7 @@ if ($totalAlunos > 0) {
     $piorAluno   = $alunos[$totalAlunos - 1];
 
     foreach ($alunos as $a) {
-        if ($a['media'] >= MEDIA_OBSERVACAO && $a['media'] < NOTA_RECUPERACAO) {
+        if ($a['media'] >= MEDIA_OBSERVACAO && $a['media'] < MEDIA_APROVACAO) {
             $emObservacao[] = $a;
         }
     }
@@ -221,9 +233,13 @@ if ($totalAlunos > 0) {
                 </thead>
                 <tbody>
                     <?php foreach ($alunos as $pos => $a): ?>
-                    <tr>
+                    <?php $emRisco = verificarRiscoRecuperacao(...$a['notas']); ?>
+                    <tr style="<?= $emRisco ? 'background-color: #fff3cd;' : '' ?>">
                         <td><?= $pos + 1 ?></td>
-                        <td class="fw-semibold"><?= e($a['nome']) ?></td>
+                        <td class="fw-semibold">
+                            <?= e($a['nome']) ?>
+                            <?= avaliarDestaque($a['media']) ?>
+                        </td>
                         <?php foreach ($a['notas'] as $n): ?>
                         <td class="<?= $n < NOTA_RECUPERACAO ? 'text-danger fw-bold' : '' ?>">
                             <?= number_format($n, 1, ',', '.') ?>
@@ -254,3 +270,15 @@ if ($totalAlunos > 0) {
 
 </body>
 </html>
+
+<?php
+function calcularSinalDaRazao(float $dividendo, float $divisor): string {
+    $resultado = $dividendo / $divisor;
+
+    if ($resultado > 0) {
+        return "Positivo";
+    } else {
+        return "Negativo";
+    }
+}
+?>
